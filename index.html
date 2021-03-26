@@ -1,15 +1,83 @@
 <html>
-  hello world
-  <form action="https://cnguyen.bp:8088/checkout" method="post">
-  <input type="hidden" name="action" value="checkout" />
-  <input type="hidden" name="posData" value="" />
-  <input type="hidden" name="notificationType" value="json" />
-  <input type="hidden" name="data" value="C/gkj3IH9FkMC4f5SvEcXX9k2IS20r09wNklTIRhpnWfvG75gBGeLp2RaVX46O8oVSxbXD8lteY7tG+bsT8xrGTkZ3RcqYPeRnbqzPgM/0Kg0UrS7S+G6LUp0Ng4kEBWf0oVuehSbkC/R/12ZSkOxg==" />
-  <input type="image" src="https://cnguyen.bp:8088/cdn/en_US/bp-btn-pay-currencies.svg" name="submit" style="width: 210px" alt="BitPay, the easy way to pay with bitcoins.">
-</form>
-</html>
+  <body>
+    hello world
+    
+    
+    <button class="generate">
+      Generate Invoice
+    </button>
+  </body>
 
-<script>
-  console.log('hello world');
   
-</script>
+  <script src="https://cnguyen.bp:8088/bitpay.min.js"></script>
+
+  <script>
+    const bitpayButton = document.querySelector('.generate');
+
+    bitpayButton.addEventListener('click', generateInvoice);
+
+    async function generateInvoice(event) {
+      event.preventDefault();
+
+      const price = 123 || document.getElementById('invoicePrice').value;
+      const redirectURL = 'https://cnguyen812.github.io/scratch';
+      const invoice = {
+          currency: 'USD',
+          price,
+//          token: 'Hfys1u5Hy3DXLk4MoEwxayiSdfx62QQf4PDpVCrNc1sX',
+          token: 'AL52SmZ4bRY1NczjNXcfUcWkJppYK4d6qytMi3AzWje9h2A5Zc1Kf1KCQwQLv33kRV',
+          itemDesc: `Heffalumps and Woozles`,
+          orderId: '12345',
+          redirectURL
+      };
+      const headers = {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-accept-version': '2.0.0'
+        }
+      };
+      try {
+        const { data } = await axios.post('https://cnguyen.bp:8088/invoice', invoice, headers);
+        const id = data["id"];
+        showInvoice(id);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    function showSnackbar(status) {
+        const snackbar = document.getElementById('snackbar');
+        // Add the 'show' class to DIV
+        snackbar.className = `${status} show`;
+        snackbar.innerText = `${status}`;
+        // After 3 seconds, remove the show class from DIV
+        setTimeout(function () {
+            snackbar.className = snackbar.className.replace(`${status} show`, '');
+        }, 3000);
+    }
+
+    function showInvoice(id) {
+        let is_paid = false
+        window.addEventListener("message", function (event) {
+            payment_status = event.data.status;
+            if (payment_status == "paid") {
+                is_paid = true
+                showSnackbar('success');
+                //take action PAID
+                return;
+            }
+        }, false);
+        //show the order info
+        bitpay.onModalWillLeave(function () {
+            if (is_paid == false) {
+                showSnackbar('fail');
+                //take action, NOT PAID
+            } //endif
+        });
+        //show the modal
+        bitpay.setApiUrlPrefix('https://cnguyen.bp:8088');
+        bitpay.showInvoice(id);
+    }
+
+  </script>
+</html>
